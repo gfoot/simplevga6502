@@ -4,7 +4,7 @@ I'll hopefully add more content and information soon - for now though, this
 repository just contains the source code for the demos I showed in my YouTube
 video here:
 
-	https://youtu.be/XPLPTlAPOVA
+* https://youtu.be/XPLPTlAPOVA
 
 # Source code
 
@@ -17,7 +17,7 @@ by running something like:
 
 There are some not-up-to-date schematics on the Hackaday page:
 
-	https://hackaday.io/project/175434-worlds-simplest-ttl-vga-circuit
+* https://hackaday.io/project/175434-worlds-simplest-ttl-vga-circuit
 
 The main changes since then are to increase the horizontal resolution and
 decrease the vertical resolution, which involved splitting the timer
@@ -30,4 +30,3 @@ this repository.
 # Feedback
 
 Do let me know on reddit (/u/gfoot360) if you have any comments, questions, requests, or other feedback!
-
