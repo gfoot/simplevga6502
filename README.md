@@ -1,8 +1,10 @@
 # Simple 6502 VGA Output
 
+<img src="img/sdcardreader6502.jpg" title="SD card reader in a circuit">
+
 I'll hopefully add more content and information soon - for now though, this
-repository just contains the source code for the demos I showed in my YouTube
-video here:
+repository just contains the source code and schematics for the demos I showed
+in my YouTube video here:
 
 * https://youtu.be/XPLPTlAPOVA
 
@@ -15,17 +17,7 @@ by running something like:
 
 # Hardware schematics
 
-There are some not-up-to-date schematics on the Hackaday page:
-
-* https://hackaday.io/project/175434-worlds-simplest-ttl-vga-circuit
-
-The main changes since then are to increase the horizontal resolution and
-decrease the vertical resolution, which involved splitting the timer
-arrangement into horizontal and vertical groups, and adding a control signal to
-reset the horizontal timer.
-
-Hopefully I'll get around to updating the schematics soon and include them in
-this repository.
+Please see the [hardware] folder for schematics, BOM, and build notes.
 
 # Feedback
 
