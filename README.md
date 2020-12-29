@@ -1,6 +1,6 @@
 # Simple 6502 VGA Output
 
-<img src="img/sdcardreader6502.jpg" title="SD card reader in a circuit">
+<img src="hardware/schematic.png" title="Simple VGA circuit schematics">
 
 I'll hopefully add more content and information soon - for now though, this
 repository just contains the source code and schematics for the demos I showed
@@ -17,7 +17,7 @@ by running something like:
 
 # Hardware schematics
 
-Please see the [hardware] folder for schematics, BOM, and build notes.
+Please see the [hardware](hardware) folder for schematics, BOM, and build notes.
 
 # Feedback
 
