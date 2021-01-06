@@ -18,15 +18,12 @@ code.
 
 ## Before you start
 
-Before building, remove the existing 74LS00 quad-NAND from the BE6502 and
-ensure that the following pins are not connected to anything any more:
+Before building, disconnect the following pins in the BE6502:
 
-    ROM: pin 20, pin 22
-    RAM: pin 20
-    6522: pin 23
-    6502: pin 37
+    ROM: pin 22 (nOE)
+    6502: pin 37 (PHI2 input)
 
-These will all be driven by elements of the new circuit.
+These will be driven by elements of the new circuit.
 
 ## Breadboard layout
 
