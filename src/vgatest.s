@@ -21,13 +21,126 @@ reset:
   jsr vram_init
   jsr wait_button
 
+  lda #0
+  jsr vram_clear
+
+  lda #0
+  sta PORTB
+
+  lda #1
+  ora #BITS_DEFAULT
+  sta VRAM_BASE+520
+  sta VRAM_BASE+520+256
+  sta VRAM_BASE+520+512
+  sta VRAM_BASE+521+768
+  sta VRAM_BASE+521+1024
+  sta VRAM_BASE+521+1280
+
+  lda #2
+  ora #BITS_DEFAULT
+  sta VRAM_BASE+530
+  sta VRAM_BASE+530+256
+  sta VRAM_BASE+530+512
+  sta VRAM_BASE+531+768
+  sta VRAM_BASE+531+1024
+  sta VRAM_BASE+531+1280
+
+  lda #3
+  ora #BITS_DEFAULT
+  sta VRAM_BASE+540
+  sta VRAM_BASE+540+256
+  sta VRAM_BASE+540+512
+  sta VRAM_BASE+541+768
+  sta VRAM_BASE+541+1024
+  sta VRAM_BASE+541+1280
+
+  jsr wait_button
+
+B = VRAM_BASE + 560
+  lda #2
+  ora #BITS_DEFAULT
+  sta B+0 + 256*0
+  sta B+1 + 256*2
+  sta B+2 + 256*4
+  sta B+3 + 256*6
+  sta B+4 + 256*8
+  lda #1
+  ora #BITS_DEFAULT
+  sta B+0 + 256*1
+  sta B+1 + 256*3
+  sta B+2 + 256*5
+  sta B+3 + 256*7
+  sta B+4 + 256*9
+
+  lda #8
+  ora #BITS_DEFAULT
+  sta B+0 + 256*0 + 5
+  sta B+1 + 256*2 + 5
+  sta B+2 + 256*4 + 5
+  sta B+3 + 256*6 + 5
+  sta B+4 + 256*8 + 5
+  lda #4
+  ora #BITS_DEFAULT
+  sta B+0 + 256*1 + 5
+  sta B+1 + 256*3 + 5
+  sta B+2 + 256*5 + 5
+  sta B+3 + 256*7 + 5
+  sta B+4 + 256*9 + 5
+
+  jsr wait_button
+
+  ldx #0
+.lp
+  txa
+  jsr vram_openline
+  
+  txa
+  lsr
+  tay
+
+  lda #5
+  bcs .noshift
+  asl
+.noshift
+  ora #BITS_DEFAULT
+ 
+  sta (ZP_PTR),y
+
+  inx
+  cpx #100
+  bne .lp
+
+  jsr wait_button
+
+  ldx #0
+.lp2
+  txa
+  jsr vram_openline
+  
+  txa
+  and #BITS_PIXELDATA
+  ora #BITS_DEFAULT
+
+  ldy #VRAM_WIDTH
+.lp3
+  dey
+  sta (ZP_PTR),y
+  bne .lp3
+
+  inx
+  cpx #VRAM_HEIGHT
+  bne .lp2
+
+  jsr wait_button
+
+
 .loop:
 
-  jsr draw_rainbow
-  jsr wait_button
+  ;jsr draw_rainbow
+  ;jsr wait_button
 
-  jsr draw_image_bw
-  jsr wait_button
+  ;jsr draw_image_bw
+  ;jsr wait_button
 
   jsr draw_image_finch
   jsr wait_button
@@ -77,8 +190,11 @@ reset:
 
   jsr vid_putpixel
 
-  jmp .loop3
+  lda PORTA
+  and #1
+  bne .loop3
 
+  jsr wait_button.buttonpressed
   jmp .loop
 
 
@@ -513,6 +629,9 @@ draw_image_finch:
   sta .srcaddr
   lda #>imagedata_finch
   sta .srcaddr+1
+
+  lda #0
+  sta PORTB
 
   ldx #.height
   stx .linesleft

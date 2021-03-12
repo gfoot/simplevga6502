@@ -31,6 +31,7 @@ ZP_PTR = $0
 ZP_VISIBLE = $2
 ZP_PORCH = $3
 ZP_TEMP = $4
+ZP_BANK = $5
 
 
 ; Store A in Y locations starting from ($0) and advance ($0)
@@ -66,6 +67,17 @@ vram_fill_lines:
   sta ZP_PTR+1
 
 .aligned:
+
+  ; Check for bank change
+  lda ZP_PTR+1
+  bne .nobankchange
+
+  lda #>VRAM_BASE
+  sta ZP_PTR+1
+
+  inc PORTB   ; next bank
+
+.nobankchange
 
   lda ZP_VISIBLE
   ldy #VGA_H_VISIBLE / VGA_H_DIVISOR
@@ -103,6 +115,8 @@ vram_init:
   sta ZP_PTR
   lda #>VRAM_BASE
   sta ZP_PTR+1
+  lda #0
+  sta PORTB ; set first bank
 
   ; Normal lines
   lda #BITS_DEFAULT | BITS_PIXELDATA
@@ -154,6 +168,8 @@ vram_clear:
   stx ZP_PTR
   ldx #>VRAM_BASE
   stx ZP_PTR+1
+  ldx #0
+  stx PORTB
   
   and #BITS_PIXELDATA
   ora #BITS_DEFAULT
@@ -177,6 +193,12 @@ vram_clear:
   adc #>VRAM_STRIDE
   sta ZP_PTR+1
 
+  bcc .nobankchange
+  lda #>VRAM_BASE
+  sta ZP_PTR+1
+  inc PORTB
+.nobankchange
+
   tya
 
   dex
@@ -191,14 +213,75 @@ vid_putpixel:
   and #BITS_PIXELDATA
   ora #BITS_DEFAULT
 
+  ; Set address low byte
   stx ZP_PTR
   tax
+
+  ; Set bank
   tya
+  rol
+  rol
+  sta PORTB
+
+  ; Set address high byte
+  tya
+  and #$7f
   clc
   adc #>VRAM_BASE
   sta ZP_PTR+1
+
+  ; Write pixel data
   txa
   ldy #0
   sta (ZP_PTR),y
   rts
 
+vram_openline:
+  ; Y coordinate in A
+  ; Sets up ZP_PTR to point to start of line
+  
+  ; Set bank
+  rol
+  rol
+  sta PORTB
+
+  ; Set address high byte
+  ror
+  ror
+  and #$7f
+  clc
+  adc #>VRAM_BASE
+  sta ZP_PTR+1
+
+  ; Set address low byte
+  lda #0
+  sta ZP_PTR
+
+  rts
+ 
+;vid_drawchar
+;  sty ZP_DRAWCHAR_Y
+;  
+;  sec
+;  sbc #$20
+;  rol
+;  rol
+;  rol
+;  sta ZP_DRAWCHAR_SRC
+;  rol
+;  and #3
+;  sta ZP_DRAWCHAR_SRC+1
+;
+;  clc
+;  lda ZP_DRAWCHAR_SRC
+;  and #$f8
+;  adc #<fontbase
+;  sta ZP_DRAWCHAR_SRC
+;  lda ZP_DRAWCHAR_SRC+1
+;  adc #>fontbase
+;  sta ZP_DRAWCHAR_SRC+1
+;
+;.loop
+;  lda ZP_DRAWCHAR_Y
+;  jsr vram_openline
+ 
