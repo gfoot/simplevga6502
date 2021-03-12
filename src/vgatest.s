@@ -107,7 +107,7 @@ B = VRAM_BASE + 560
   sta (ZP_PTR),y
 
   inx
-  cpx #100
+  cpx #200
   bne .lp
 
   jsr wait_button
