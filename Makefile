@@ -1,4 +1,4 @@
-BINFILES = bin/snake.out bin/vgatest.out
+BINFILES = bin/snake.out bin/vgatest.out bin/piday2021.out
 
 all: $(BINFILES)
 

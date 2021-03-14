@@ -32,6 +32,15 @@ ZP_VISIBLE = $2
 ZP_PORCH = $3
 ZP_TEMP = $4
 ZP_BANK = $5
+ZP_FGCOLOR = $6
+ZP_BGCOLOR = $7
+
+ZP_DRAWCHAR_X = $2
+ZP_DRAWCHAR_Y = $3
+ZP_DRAWCHAR_DY = $4
+ZP_DRAWCHAR_BITS = $5
+ZP_DRAWCHAR_SRC = $8
+
 
 
 ; Store A in Y locations starting from ($0) and advance ($0)
@@ -259,29 +268,79 @@ vram_openline:
 
   rts
  
-;vid_drawchar
-;  sty ZP_DRAWCHAR_Y
-;  
-;  sec
-;  sbc #$20
-;  rol
-;  rol
-;  rol
-;  sta ZP_DRAWCHAR_SRC
-;  rol
-;  and #3
-;  sta ZP_DRAWCHAR_SRC+1
-;
-;  clc
-;  lda ZP_DRAWCHAR_SRC
-;  and #$f8
-;  adc #<fontbase
-;  sta ZP_DRAWCHAR_SRC
-;  lda ZP_DRAWCHAR_SRC+1
-;  adc #>fontbase
-;  sta ZP_DRAWCHAR_SRC+1
-;
-;.loop
-;  lda ZP_DRAWCHAR_Y
-;  jsr vram_openline
- 
+
+vid_drawchar
+  ; A = character
+  ; X = xpos
+  ; Y = ypos
+
+  stx ZP_DRAWCHAR_X
+  sty ZP_DRAWCHAR_Y
+
+  sec
+  sbc #$20
+  rol
+  rol
+  rol
+  sta ZP_DRAWCHAR_SRC
+  rol
+  and #3
+  sta ZP_DRAWCHAR_SRC+1
+
+  clc
+  lda ZP_DRAWCHAR_SRC
+  and #$f8
+  adc #<fontbase
+  sta ZP_DRAWCHAR_SRC
+  lda ZP_DRAWCHAR_SRC+1
+  adc #>fontbase
+  sta ZP_DRAWCHAR_SRC+1
+
+  ldy #8
+  sty ZP_DRAWCHAR_DY
+
+.yloop
+  ldy ZP_DRAWCHAR_DY
+  dey
+  sty ZP_DRAWCHAR_DY
+  bmi .yloopend
+
+  lda (ZP_DRAWCHAR_SRC),y   ; 8 bits, left to right
+  sta ZP_DRAWCHAR_BITS
+
+  tya
+  clc
+  adc ZP_DRAWCHAR_Y
+  jsr vram_openline
+
+  ldy ZP_DRAWCHAR_X
+  ldx #4
+
+.xloop
+  lda ZP_BGCOLOR
+  rol ZP_DRAWCHAR_BITS
+  bcc .leftbitclear
+  lda ZP_FGCOLOR
+.leftbitclear
+  asl
+  ora ZP_BGCOLOR
+  rol ZP_DRAWCHAR_BITS
+  bcc .rightbitclear
+  and #$0a
+  ora ZP_FGCOLOR
+.rightbitclear
+  ora #BITS_DEFAULT
+  sta (ZP_PTR),y
+
+  iny
+  dex
+  bne .xloop
+
+  jmp .yloop
+
+.yloopend
+
+  rts
+
+  .include lib/font.s
+
