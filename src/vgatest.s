@@ -1,7 +1,10 @@
   .org $8000
 
-imagedata_finch
-  .binary data/finch2.img
+
+
+
+imagedata_320100
+  .binary data/320100.img
 
   .include lib/vga.s
   .include lib/random.s
@@ -107,7 +110,7 @@ B = VRAM_BASE + 560
   sta (ZP_PTR),y
 
   inx
-  cpx #200
+  cpx #VRAM_HEIGHT
   bne .lp
 
   jsr wait_button
@@ -142,7 +145,7 @@ B = VRAM_BASE + 560
   ;jsr draw_image_bw
   ;jsr wait_button
 
-  jsr draw_image_finch
+  jsr draw_image_320100
   jsr wait_button
 
   ;jsr vram_init
@@ -613,7 +616,7 @@ draw_image_bw:
   rts
 
 
-draw_image_finch:
+draw_image_320100:
 .address = VRAM_BASE
 .destaddr = $0
 .srcaddr = $2
@@ -625,9 +628,9 @@ draw_image_finch:
   sta .destaddr
   lda #>.address
   sta .destaddr+1
-  lda #<imagedata_finch
+  lda #<imagedata_320100
   sta .srcaddr
-  lda #>imagedata_finch
+  lda #>imagedata_320100
   sta .srcaddr+1
 
   lda #0
