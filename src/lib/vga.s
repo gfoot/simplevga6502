@@ -14,10 +14,10 @@ VGA_H_BPORCH = 48
 VGA_H_STRIDE = 1024
 VGA_H_DIVISOR = 4
 
-VGA_V_VISIBLE = 400
-VGA_V_FPORCH = 12
-VGA_V_SYNC = 2       ; rounded up from 2 due to large VGA_V_DIVISOR
-VGA_V_BPORCH = 35    ; decreased from 35 to compensate for increased vsync
+VGA_V_VISIBLE = 480  ; 400  480
+VGA_V_FPORCH = 10    ;  12   10
+VGA_V_SYNC = 2       ;   2    2
+VGA_V_BPORCH = 33    ;  35   33
 VGA_V_DIVISOR = 2
 
 VRAM_BASE = $8000
@@ -230,6 +230,7 @@ vid_putpixel:
   tya
   rol
   rol
+  and #1
   sta PORTB
 
   ; Set address high byte
@@ -250,13 +251,14 @@ vram_openline:
   ; Sets up ZP_PTR to point to start of line
   
   ; Set bank
+  pha
   rol
   rol
+  and #1
   sta PORTB
+  pla
 
   ; Set address high byte
-  ror
-  ror
   and #$7f
   clc
   adc #>VRAM_BASE
