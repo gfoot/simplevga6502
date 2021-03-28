@@ -18,7 +18,7 @@ VGA_V_VISIBLE = 480  ; 400  480
 VGA_V_FPORCH = 10    ;  12   10
 VGA_V_SYNC = 2       ;   2    2
 VGA_V_BPORCH = 33    ;  35   33
-VGA_V_DIVISOR = 2
+VGA_V_DIVISOR = 1
 
 VRAM_BASE = $8000
 VRAM_STRIDE = VGA_H_STRIDE / VGA_H_DIVISOR
@@ -36,10 +36,10 @@ ZP_FGCOLOR = $6
 ZP_BGCOLOR = $7
 
 ZP_DRAWCHAR_X = $2
-ZP_DRAWCHAR_Y = $3
-ZP_DRAWCHAR_DY = $4
-ZP_DRAWCHAR_BITS = $5
-ZP_DRAWCHAR_SRC = $8
+ZP_DRAWCHAR_Y = $3 ; two bytes
+ZP_DRAWCHAR_DY = $5
+ZP_DRAWCHAR_BITS = $8
+ZP_DRAWCHAR_SRC = $9
 
 
 
@@ -133,11 +133,11 @@ vram_init:
   and #~BITS_PIXELDATA
   sta ZP_PORCH
 
-  ldx #VGA_V_VISIBLE/VGA_V_DIVISOR
+  ldx #VGA_V_VISIBLE/VGA_V_DIVISOR/2
   jsr vram_fill_lines
   ; if it's too big, need to split into two chunks
-  ;ldx #VGA_V_VISIBLE/VGA_V_DIVISOR - (VGA_V_VISIBLE/VGA_V_DIVISOR/2)
-  ;jsr vram_fill_lines
+  ldx #VGA_V_VISIBLE/VGA_V_DIVISOR - (VGA_V_VISIBLE/VGA_V_DIVISOR/2)
+  jsr vram_fill_lines
 
   ; Vertical front porch
   lda #BITS_DEFAULT
@@ -173,6 +173,8 @@ vram_clear_black:
   lda #0
 
 vram_clear:
+.ZP_Y_HI = $0a
+
   ldx #<VRAM_BASE
   stx ZP_PTR
   ldx #>VRAM_BASE
@@ -183,7 +185,10 @@ vram_clear:
   and #BITS_PIXELDATA
   ora #BITS_DEFAULT
   
-  ldx #VRAM_HEIGHT
+  ldx #>VRAM_HEIGHT
+  inx
+  stx .ZP_Y_HI
+  ldx #<VRAM_HEIGHT
 .loop
 
   ldy #VRAM_WIDTH
@@ -211,6 +216,8 @@ vram_clear:
   tya
 
   dex
+  bne .loop
+  dec .ZP_Y_HI
   bne .loop
 
   rts
@@ -247,14 +254,15 @@ vid_putpixel:
   rts
 
 vram_openline:
-  ; Y coordinate in A
+  ; Y coordinate in A, high bit in Y
   ; Sets up ZP_PTR to point to start of line
   
   ; Set bank
   pha
   rol
+  tya
   rol
-  and #1
+  and #3
   sta PORTB
   pla
 
@@ -273,11 +281,7 @@ vram_openline:
 
 vid_drawchar
   ; A = character
-  ; X = xpos
-  ; Y = ypos
-
-  stx ZP_DRAWCHAR_X
-  sty ZP_DRAWCHAR_Y
+  ; X,Y in ZP_DRAWCHAR_X, ZP_DRAWCHAR_Y
 
   sec
   sbc #$20
@@ -313,6 +317,11 @@ vid_drawchar
   tya
   clc
   adc ZP_DRAWCHAR_Y
+  tax
+  lda #0
+  adc ZP_DRAWCHAR_Y+1
+  tay
+  txa
   jsr vram_openline
 
   ldy ZP_DRAWCHAR_X

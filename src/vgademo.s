@@ -30,13 +30,14 @@ reset:
 
   lda #160
   sta regionfill.W
-  lda #200
+  lda #240
   sta regionfill.H
 
   lda #0
   sta regionfill.X
   lda #0
   sta regionfill.Y
+  sta regionfill.Y+1
   lda #BITS_DEFAULT | %1010
   sta regionfill.VALUES
   lda #BITS_DEFAULT | %0000
@@ -45,6 +46,10 @@ reset:
   sta regionfill.VALUES+2
   lda #BITS_DEFAULT | %0000
   sta regionfill.VALUES+3
+  jsr regionfill
+
+  lda #240
+  sta regionfill.Y
   jsr regionfill
   
   lda #0
@@ -60,13 +65,17 @@ reset:
   stx DRAWSTRING_X
   ldy #8
   sty DRAWSTRING_Y
+  ldy #0
+  sty DRAWSTRING_Y+1
   jsr drawstringimm
-  .asciiz "320x200"
+  .asciiz "320x480"
 
   ldx #12
   stx DRAWSTRING_X
   ldy #16
   sty DRAWSTRING_Y
+  ldy #0
+  sty DRAWSTRING_Y+1
   jsr drawstringimm
   .asciiz "on"
 
@@ -74,19 +83,21 @@ reset:
   stx DRAWSTRING_X
   ldy #24
   sty DRAWSTRING_Y
+  ldy #0
+  sty DRAWSTRING_Y+1
   jsr drawstringimm
-  .asciiz "640x400"
+  .asciiz "640x480"
 
   lda #0
   sta ZP_FGCOLOR
   lda #0
   sta ZP_BGCOLOR
-  lda #96
+  lda #220
   jsr draw_circle
 
   lda #1
   sta ZP_BGCOLOR
-  lda #93
+  lda #210
   sta $9c
 
 .circleloop
@@ -99,166 +110,15 @@ reset:
   lda $9c
   jsr draw_circle
 
-  dec $9c
-  dec $9c
-  dec $9c
-  bne .circleloop
+  sec
+  lda $9c
+  sbc #8
+  sta $9c
+  cmp #6
+  bcs .circleloop
 
 .stop
   jmp .stop
-
-  lda #0
-  sta ZP_RANDOMCOLOURS_FLAG
-
-  lda #0
-  sta ZP_BGCOLOR
-
-  lda #1
-  sta ZP_FGCOLOR
-
-  ldx #0
-  stx DRAWSTRING_X
-  ldy #2
-  sty DRAWSTRING_Y
-  jsr drawstringimm
-  .asciiz "to /r/beneater"
-
-  lda #4
-  sta ZP_FGCOLOR
-
-  ldx #130
-  stx DRAWSTRING_X
-  ldy #175
-  sty DRAWSTRING_Y
-  jsr drawstringimm
-  .asciiz "from"
-
-  ldx #116
-  stx DRAWSTRING_X
-  ldy #185
-  sty DRAWSTRING_Y
-  jsr drawstringimm
-  .asciiz "/u/gfoot360"
-
-  jsr wait_button
-
-
-  lda #1
-  sta ZP_FGCOLOR
-  lda #0
-  sta ZP_BGCOLOR
-  lda #96
-  jsr draw_circle
-
-  jsr wait_button
-
-  lda ZP_FGCOLOR
-  sta ZP_BGCOLOR
-  lda #0
-  sta ZP_FGCOLOR
-  lda #80
-  jsr draw_circle
-
-  jsr wait_button
-
-  lda ZP_FGCOLOR
-  sta ZP_BGCOLOR
-  lda #4
-  sta ZP_FGCOLOR
-  lda #64
-  jsr draw_circle
-
-  jsr wait_button
-
-  lda ZP_FGCOLOR
-  sta ZP_BGCOLOR
-  lda #5
-  sta ZP_FGCOLOR
-  lda #48
-  jsr draw_circle
-
-  jsr wait_button
-
-  lda ZP_FGCOLOR
-  sta ZP_BGCOLOR
-  lda #1
-  sta ZP_FGCOLOR
-  lda #32
-  jsr draw_circle
-
-  jsr wait_button
-
-  lda ZP_FGCOLOR
-  sta ZP_BGCOLOR
-  lda #0
-  sta ZP_FGCOLOR
-  lda #16
-  jsr draw_circle
-
-  jsr wait_button
-  jsr wait_button
-
-  lda #5
-  sta ZP_BGCOLOR
-  lda #1
-  sta ZP_FGCOLOR
-  lda #32
-  jsr draw_circle
-
-  lda ZP_FGCOLOR
-  sta ZP_BGCOLOR
-  lda #5
-  sta ZP_FGCOLOR
-
-  ldx #70
-  stx DRAWSTRING_X
-  ldy #86
-  sty DRAWSTRING_Y
-  jsr drawstringimm
-  .asciiz "HAPPY"
-
-  ldx #68
-  stx DRAWSTRING_X
-  ldy #96
-  sty DRAWSTRING_Y
-  jsr drawstringimm
-  .asciiz "PI DAY"
-
-  ldx #72
-  stx DRAWSTRING_X
-  ldy #106
-  sty DRAWSTRING_Y
-  jsr drawstringimm
-  .asciiz "2021"
-
-  jsr wait_button
-
-  lda #1
-  sta ZP_RANDOMCOLOURS_FLAG
-
-.loop:
-  ldx #70
-  stx DRAWSTRING_X
-  ldy #86
-  sty DRAWSTRING_Y
-  jsr drawstringimm
-  .asciiz "HAPPY"
-
-  ldx #68
-  stx DRAWSTRING_X
-  ldy #96
-  sty DRAWSTRING_Y
-  jsr drawstringimm
-  .asciiz "PI DAY"
-
-  ldx #72
-  stx DRAWSTRING_X
-  ldy #106
-  sty DRAWSTRING_Y
-  jsr drawstringimm
-  .asciiz "2021"
-
-  jmp .loop
 
 
 draw_circle:
@@ -349,7 +209,7 @@ draw_circle:
   ;jsr waitvsync
   lda .Y2
   cmp .Y1
-  bpl .loop
+  bcs .loop
 
   rts
 
@@ -360,10 +220,13 @@ draw_circle:
   ;
   ; Draw two horizontal lines - one at +Y,
   ; one at -Y - from -X to +X
+  ;
+  ; Due to aspect ratio, also divide X by two
 
   sta .TEMP_Y
 
   txa
+  lsr
   lsr
   sta .HLINE_HW
 
@@ -373,17 +236,28 @@ draw_circle:
   sta .HLINE_X
 
   txa
+  lsr
   and #1
   sta .HLINE_ODD
 
   sec ;+1
-  lda #100
+  lda #240
   adc .TEMP_Y
+  tax
+  lda #0
+  adc #0
+  tay
+  txa
   jsr .hline
 
   sec
-  lda #100
+  lda #240
   sbc .TEMP_Y
+  tax
+  lda #0
+  sbc #0
+  tay
+  txa
 
 .hline
 .HLINE_ODD = $a1
@@ -483,7 +357,7 @@ DRAWSTRING_X = $30
 DRAWSTRING_Y = $31
 
 drawstring:
-.TEMP_LOOPCOUNT = $32
+.TEMP_LOOPCOUNT = $33
 
   pha
   txa
@@ -499,7 +373,11 @@ drawstring:
   sty .TEMP_LOOPCOUNT
 
   ldx DRAWSTRING_X
+  stx ZP_DRAWCHAR_X
   ldy DRAWSTRING_Y
+  sty ZP_DRAWCHAR_Y
+  ldy DRAWSTRING_Y+1
+  sty ZP_DRAWCHAR_Y+1
   jsr vid_drawchar
 
   ldx DRAWSTRING_X
@@ -560,9 +438,9 @@ waitvsync
 regionfill:
 .X = $90      ; in bytes
 .Y = $91
-.W = $92      ; in bytes
-.H = $93
-.VALUES = $94 ; 4 bytes
+.W = $93      ; in bytes
+.H = $94
+.VALUES = $95 ; 4 bytes
 
   ldx .H
   dex
@@ -571,6 +449,11 @@ regionfill:
   txa
   clc
   adc .Y
+  pha
+  lda #0
+  adc .Y+1
+  tay
+  pla
   jsr vram_openline
 
   lda .X

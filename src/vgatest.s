@@ -93,8 +93,10 @@ B = VRAM_BASE + 560
   jsr wait_button
 
   ldx #0
+  stx .ZP_Y_HI
 .lp
   txa
+  ldy .ZP_Y_HI
   jsr vram_openline
   
   txa
@@ -109,15 +111,25 @@ B = VRAM_BASE + 560
  
   sta (ZP_PTR),y
 
+.ZP_Y_HI = $0a
+
   inx
-  cpx #VRAM_HEIGHT
+  bne .nocarry
+  inc .ZP_Y_HI
+.nocarry
+  cpx #<VRAM_HEIGHT
+  bne .lp
+  lda .ZP_Y_HI
+  cmp #>VRAM_HEIGHT
   bne .lp
 
   jsr wait_button
 
   ldx #0
+  stx .ZP_Y_HI
 .lp2
   txa
+  ldy .ZP_Y_HI
   jsr vram_openline
   
   txa
@@ -131,7 +143,13 @@ B = VRAM_BASE + 560
   bne .lp3
 
   inx
-  cpx #VRAM_HEIGHT
+  bne .nocarry2
+  inc .ZP_Y_HI
+.nocarry2
+  cpx #<VRAM_HEIGHT
+  bne .lp2
+  lda .ZP_Y_HI
+  cmp #>VRAM_HEIGHT
   bne .lp2
 
   jsr wait_button
@@ -174,7 +192,7 @@ B = VRAM_BASE + 560
 
   inc $41
   ldx $41
-  cpx #VRAM_HEIGHT
+  cpx #<VRAM_HEIGHT
   bne .loop5
 
   ;jmp .loop6
@@ -184,7 +202,7 @@ B = VRAM_BASE + 560
   jsr random_range
   tax
 
-  lda #VRAM_HEIGHT
+  lda #<VRAM_HEIGHT
   jsr random_range
   tay
 
