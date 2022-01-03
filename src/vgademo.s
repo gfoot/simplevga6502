@@ -17,6 +17,7 @@ reset:
   txs
 
   jsr via_init
+  jsr lcd_init
 
   jsr printimm
   .asciiz "Hello, World!"
@@ -116,6 +117,24 @@ reset:
   sta $9c
   cmp #6
   bcs .circleloop
+
+.loop1
+  lda #65
+  sta $0
+
+.loop2
+  jsr wait_button
+
+  jsr lcd_clear
+
+  lda $0
+  jsr print_char
+
+  inc $0
+  lda $0
+  cmp #91
+  beq .loop1
+  jmp .loop2
 
 .stop
   jmp .stop

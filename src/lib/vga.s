@@ -5,7 +5,7 @@ BIT_HSYNC = %00100000
 BIT_HRESET = %00010000
 BITS_PIXELDATA = %00001111
 
-BITS_DEFAULT = BIT_HSYNC | BIT_HRESET | BIT_RESET
+BITS_DEFAULT = BIT_HSYNC | BIT_VSYNC | BIT_HRESET | BIT_RESET
 
 VGA_H_VISIBLE = 640
 VGA_H_FPORCH = 16
@@ -119,12 +119,41 @@ vram_fill_lines:
   rts
 
 
-vram_init:
+vram_zeroall:
+  ; Clear all video memory to zero
+  ; Clear secondary memory (blue and green channels)
+  ldx #0
+  ldy #0
+.loop1
+  stx PORTB
   lda #<VRAM_BASE
   sta ZP_PTR
   lda #>VRAM_BASE
   sta ZP_PTR+1
-  lda #0
+  tya ; = 0
+.loop2
+  sta (ZP_PTR),y
+  iny
+  bne .loop2
+
+  inc ZP_PTR+1
+  bne .loop2
+  
+  inx
+  cpx #8
+  bne .loop1
+
+  rts
+
+
+vram_init:
+  jsr vram_zeroall
+
+  lda #<VRAM_BASE
+  sta ZP_PTR
+  lda #>VRAM_BASE
+  sta ZP_PTR+1
+  lda #16
   sta PORTB ; set first bank
 
   ; Normal lines
@@ -262,7 +291,7 @@ vram_openline:
   rol
   tya
   rol
-  and #3
+  ;and #3
   sta PORTB
   pla
 

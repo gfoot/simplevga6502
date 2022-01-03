@@ -50,6 +50,24 @@ lcd_clear:
   jsr lcd_instruction
   rts
 
+lcd_setpos_startline0:
+  lda #%10000000
+  jmp lcd_instruction
+
+lcd_setpos_startline1:
+  lda #%11000000
+  jmp lcd_instruction
+
+lcd_setpos_xy:
+  txa
+  asl
+  asl
+  cpy #1  ; set carry if Y >= 1
+  ror
+  sec
+  ror
+  jmp lcd_instruction
+
 print_char:
   jsr lcd_wait
   sta PORTB

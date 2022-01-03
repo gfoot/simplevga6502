@@ -17,6 +17,7 @@ reset:
   txs
 
   jsr via_init
+  jsr lcd_init
 
   jsr printimm
   .asciiz "Hello, World!"
