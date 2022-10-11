@@ -419,7 +419,7 @@ drawstring:
 
   ldx DRAWSTRING_X
   ldy DRAWSTRING_Y
-  jsr vid_drawchar
+  jsr vid_printchar
 
   ldx DRAWSTRING_X
   inx

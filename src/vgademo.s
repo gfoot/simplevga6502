@@ -392,12 +392,12 @@ drawstring:
   sty .TEMP_LOOPCOUNT
 
   ldx DRAWSTRING_X
-  stx ZP_DRAWCHAR_X
+  stx ZP_TEXTPOS_X
   ldy DRAWSTRING_Y
-  sty ZP_DRAWCHAR_Y
+  sty ZP_TEXTPOS_Y
   ldy DRAWSTRING_Y+1
-  sty ZP_DRAWCHAR_Y+1
-  jsr vid_drawchar
+  sty ZP_TEXTPOS_Y+1
+  jsr vid_printchar
 
   ldx DRAWSTRING_X
   inx

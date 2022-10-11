@@ -35,12 +35,12 @@ ZP_BANK = $5
 ZP_FGCOLOR = $6
 ZP_BGCOLOR = $7
 
-ZP_DRAWCHAR_X = $2
-ZP_DRAWCHAR_Y = $3 ; two bytes
-ZP_DRAWCHAR_DY = $5
-ZP_DRAWCHAR_BITS = $8
-ZP_DRAWCHAR_SRC = $9
-
+ZP_TEXTPOS_X = $2
+ZP_TEXTPOS_Y = $3 ; two bytes
+ZP_PRINTCHAR_DY = $5
+ZP_PRINTCHAR_BITS = $8 ; two bytes
+ZP_PRINTCHAR_SRC = $a ; two bytes
+ZP_PRINTSTRING_LOOPCOUNT = $c
 
 
 ; Store A in Y locations starting from ($0) and advance ($0)
@@ -308,79 +308,218 @@ vram_openline:
   rts
  
 
-vid_drawchar
+vid_printchar
   ; A = character
-  ; X,Y in ZP_DRAWCHAR_X, ZP_DRAWCHAR_Y
+  ; X,Y in ZP_TEXTPOS_X, ZP_TEXTPOS_Y
 
   sec
   sbc #$20
   rol
   rol
   rol
-  sta ZP_DRAWCHAR_SRC
+  sta ZP_PRINTCHAR_SRC
   rol
   and #3
-  sta ZP_DRAWCHAR_SRC+1
+  sta ZP_PRINTCHAR_SRC+1
 
   clc
-  lda ZP_DRAWCHAR_SRC
+  lda ZP_PRINTCHAR_SRC
   and #$f8
   adc #<fontbase
-  sta ZP_DRAWCHAR_SRC
-  lda ZP_DRAWCHAR_SRC+1
+  sta ZP_PRINTCHAR_SRC
+  lda ZP_PRINTCHAR_SRC+1
   adc #>fontbase
-  sta ZP_DRAWCHAR_SRC+1
+  sta ZP_PRINTCHAR_SRC+1
 
   ldy #8
-  sty ZP_DRAWCHAR_DY
+  sty ZP_PRINTCHAR_DY
 
 .yloop
-  ldy ZP_DRAWCHAR_DY
+  ldy ZP_PRINTCHAR_DY
   dey
-  sty ZP_DRAWCHAR_DY
+  sty ZP_PRINTCHAR_DY
   bmi .yloopend
 
-  lda (ZP_DRAWCHAR_SRC),y   ; 8 bits, left to right
-  sta ZP_DRAWCHAR_BITS
+  lda (ZP_PRINTCHAR_SRC),y   ; 8 bits, left to right
+  sta ZP_PRINTCHAR_BITS
 
   tya
   clc
-  adc ZP_DRAWCHAR_Y
+  adc ZP_TEXTPOS_Y
   tax
   lda #0
-  adc ZP_DRAWCHAR_Y+1
+  adc ZP_TEXTPOS_Y+1
+  ora #4
   tay
   txa
   jsr vram_openline
 
-  ldy ZP_DRAWCHAR_X
-  ldx #4
+  ; Draw one row of character.  At 640x480x3bpp, we need to do two passes - one for 
+  ; the red channel (combining BITS_DEFAULT) and one for the green and blue channels 
+  ; together.
+  ;
+  ; Each pass writes two bytes - four pixels each.
 
-.xloop
-  lda ZP_BGCOLOR
-  rol ZP_DRAWCHAR_BITS
-  bcc .leftbitclear
-  lda ZP_FGCOLOR
-.leftbitclear
-  asl
-  ora ZP_BGCOLOR
-  rol ZP_DRAWCHAR_BITS
-  bcc .rightbitclear
-  and #$0a
-  ora ZP_FGCOLOR
-.rightbitclear
-  ora #BITS_DEFAULT
+  ; For now, one pass only, blue and green channels.
+
+  ldy ZP_TEXTPOS_X
+
+  ; Get top four bits and replicate in low bits
+  lda ZP_PRINTCHAR_BITS
+  lsr
+  lsr
+  lsr
+  lsr
+  sta ZP_PRINTCHAR_BITS+1
+  lda ZP_PRINTCHAR_BITS
+  and #$f0
+  ora ZP_PRINTCHAR_BITS+1
+
   sta (ZP_PTR),y
 
   iny
-  dex
-  bne .xloop
+
+  ; Get bottom four bits and replicate in high bits
+  lda ZP_PRINTCHAR_BITS
+  asl
+  asl
+  asl
+  asl
+  sta ZP_PRINTCHAR_BITS+1
+  lda ZP_PRINTCHAR_BITS
+  and #$0f
+  ora ZP_PRINTCHAR_BITS+1
+
+  sta (ZP_PTR),y
 
   jmp .yloop
 
 .yloopend
 
+vid_textpos_moveright
+  ldy ZP_TEXTPOS_X
+  iny
+  iny
+  sty ZP_TEXTPOS_X
+  cpy #160
+  bcs vid_textpos_newline
   rts
+
+vid_textpos_newline
+  ldy #0
+  sty ZP_TEXTPOS_X
+vid_textpos_movedown
+  clc
+  lda ZP_TEXTPOS_Y
+  adc #8
+  sta ZP_TEXTPOS_Y
+  bcc .nocarry
+  inc ZP_TEXTPOS_Y+1
+.nocarry
+  cmp #<480
+  bne .done
+
+  ; Low byte was (maybe) match for 480 - check high byte as well
+  lda ZP_TEXTPOS_Y+1
+  cmp #>480
+  bne .done
+  
+  ; We went off the bottom of the screen, move back up again instead
+  sec
+  lda ZP_TEXTPOS_Y
+  sbc #8
+  sta ZP_TEXTPOS_Y
+
+  ; This will never borrow so there's no need to handle the high byte
+
+.done
+  rts
+
+
+
+vid_printstringimm:
+  pha
+  txa
+  pha
+
+  tsx
+  clc
+  lda $103,x
+  adc #1
+  sta printmessage_bufferptr
+  lda $104,x
+  adc #0
+  sta printmessage_bufferptr+1
+
+  jsr vid_printstring
+
+  lda printmessage_bufferptr
+  sta $103,x
+  lda printmessage_bufferptr+1
+  sta $104,x
+
+  pla
+  tax
+  pla
+  rts
+
+
+vid_printstring:
+  pha
+  txa
+  pha
+  tya
+  pha
+
+  ldy #0
+.loop:
+  lda (printmessage_bufferptr),y
+  beq .endloop
+
+  sty ZP_PRINTSTRING_LOOPCOUNT
+
+  jsr vid_printchar
+
+  ldy ZP_PRINTSTRING_LOOPCOUNT
+  iny
+  jmp .loop
+
+.endloop:
+  clc
+  tya
+  adc printmessage_bufferptr
+  sta printmessage_bufferptr
+  lda printmessage_bufferptr+1
+  adc #0
+  sta printmessage_bufferptr+1
+
+  pla
+  tay
+  pla
+  tax
+  pla
+  rts
+
+
+vid_printhex
+  pha
+  ror
+  ror
+  ror
+  ror
+  jsr vid_printhex_nybble
+  pla
+vid_printhex_nybble
+  and #15
+  cmp #10
+  bmi .skipletter
+  adc #6
+.skipletter
+  adc #48
+  jsr vid_printchar
+  rts
+
+
 
   .include lib/font.s
 
