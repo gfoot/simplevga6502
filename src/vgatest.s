@@ -27,12 +27,13 @@ reset:
 
   lda #0
   jsr vram_clear
+  jsr wait_button
 
-  lda #0
+  lda #8
   sta PORTB
 
   lda #1
-  ora #BITS_DEFAULT
+;  ora #BITS_DEFAULT
   sta VRAM_BASE+520
   sta VRAM_BASE+520+256
   sta VRAM_BASE+520+512
@@ -41,7 +42,7 @@ reset:
   sta VRAM_BASE+521+1280
 
   lda #2
-  ora #BITS_DEFAULT
+;  ora #BITS_DEFAULT
   sta VRAM_BASE+530
   sta VRAM_BASE+530+256
   sta VRAM_BASE+530+512
@@ -50,7 +51,7 @@ reset:
   sta VRAM_BASE+531+1280
 
   lda #3
-  ora #BITS_DEFAULT
+;  ora #BITS_DEFAULT
   sta VRAM_BASE+540
   sta VRAM_BASE+540+256
   sta VRAM_BASE+540+512
@@ -62,14 +63,14 @@ reset:
 
 B = VRAM_BASE + 560
   lda #2
-  ora #BITS_DEFAULT
+;  ora #BITS_DEFAULT
   sta B+0 + 256*0
   sta B+1 + 256*2
   sta B+2 + 256*4
   sta B+3 + 256*6
   sta B+4 + 256*8
   lda #1
-  ora #BITS_DEFAULT
+;  ora #BITS_DEFAULT
   sta B+0 + 256*1
   sta B+1 + 256*3
   sta B+2 + 256*5
@@ -77,14 +78,14 @@ B = VRAM_BASE + 560
   sta B+4 + 256*9
 
   lda #8
-  ora #BITS_DEFAULT
+;  ora #BITS_DEFAULT
   sta B+0 + 256*0 + 5
   sta B+1 + 256*2 + 5
   sta B+2 + 256*4 + 5
   sta B+3 + 256*6 + 5
   sta B+4 + 256*8 + 5
   lda #4
-  ora #BITS_DEFAULT
+;  ora #BITS_DEFAULT
   sta B+0 + 256*1 + 5
   sta B+1 + 256*3 + 5
   sta B+2 + 256*5 + 5
@@ -93,8 +94,9 @@ B = VRAM_BASE + 560
 
   jsr wait_button
 
-  ldx #0
+  ldx #4
   stx .ZP_Y_HI
+  ldx #0
 .lp
   txa
   ldy .ZP_Y_HI
@@ -108,7 +110,7 @@ B = VRAM_BASE + 560
   bcs .noshift
   asl
 .noshift
-  ora #BITS_DEFAULT
+;  ora #BITS_DEFAULT
  
   sta (ZP_PTR),y
 
@@ -121,21 +123,23 @@ B = VRAM_BASE + 560
   cpx #<VRAM_HEIGHT
   bne .lp
   lda .ZP_Y_HI
+  and #3
   cmp #>VRAM_HEIGHT
   bne .lp
 
   jsr wait_button
 
-  ldx #0
+  ldx #4
   stx .ZP_Y_HI
+  ldx #0
 .lp2
   txa
   ldy .ZP_Y_HI
   jsr vram_openline
   
   txa
-  and #BITS_PIXELDATA
-  ora #BITS_DEFAULT
+  ;and #BITS_PIXELDATA
+  ;ora #BITS_DEFAULT
 
   ldy #VRAM_WIDTH
 .lp3
@@ -150,6 +154,7 @@ B = VRAM_BASE + 560
   cpx #<VRAM_HEIGHT
   bne .lp2
   lda .ZP_Y_HI
+  and #3
   cmp #>VRAM_HEIGHT
   bne .lp2
 
@@ -168,11 +173,12 @@ B = VRAM_BASE + 560
   jsr wait_button
 
   ;jsr vram_init
-  jsr random
-  jsr vram_clear
-  jsr wait_button
+  ;jsr random
+  ;jsr vram_clear
+  ;jsr wait_button
 
-  jmp .loop3
+.stop
+  jmp .stop
 
 .loop6
   ldx #0

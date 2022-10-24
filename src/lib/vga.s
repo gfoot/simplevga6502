@@ -5,20 +5,20 @@ BIT_HSYNC = %00100000
 BIT_HRESET = %00010000
 BITS_PIXELDATA = %00001111
 
-BITS_DEFAULT = BIT_HSYNC | BIT_VSYNC | BIT_HRESET | BIT_RESET
+BITS_DEFAULT = BIT_HRESET | BIT_RESET
 
-VGA_H_VISIBLE = 640
-VGA_H_FPORCH = 16
-VGA_H_SYNC = 96
-VGA_H_BPORCH = 48
+VGA_H_VISIBLE = 800  ;  640
+VGA_H_FPORCH =   24  ;   16
+VGA_H_SYNC =     72  ;   96
+VGA_H_BPORCH =  128  ;   48
 VGA_H_STRIDE = 1024
-VGA_H_DIVISOR = 4
+VGA_H_DIVISOR =   4
 
-VGA_V_VISIBLE = 480  ; 400  480
-VGA_V_FPORCH = 10    ;  12   10
-VGA_V_SYNC = 2       ;   2    2
-VGA_V_BPORCH = 33    ;  35   33
-VGA_V_DIVISOR = 1
+VGA_V_VISIBLE = 600  ; 400  480
+VGA_V_FPORCH =    1  ;  12   10
+VGA_V_SYNC =      2  ;   2    2
+VGA_V_BPORCH =   22  ;  35   33
+VGA_V_DIVISOR =   1
 
 VRAM_BASE = $8000
 VRAM_STRIDE = VGA_H_STRIDE / VGA_H_DIVISOR
@@ -84,7 +84,11 @@ vram_fill_lines:
   lda #>VRAM_BASE
   sta ZP_PTR+1
 
-  inc PORTB   ; next bank
+  ; Next bank
+  ldy ZP_BANK
+  iny
+  sty ZP_BANK
+  sty PORTB
 
 .nobankchange
 
@@ -153,8 +157,11 @@ vram_init:
   sta ZP_PTR
   lda #>VRAM_BASE
   sta ZP_PTR+1
+
+  ; Set first bank
   lda #16
-  sta PORTB ; set first bank
+  sta ZP_BANK
+  sta PORTB
 
   ; Normal lines
   lda #BITS_DEFAULT | BITS_PIXELDATA
@@ -162,10 +169,12 @@ vram_init:
   and #~BITS_PIXELDATA
   sta ZP_PORCH
 
-  ldx #VGA_V_VISIBLE/VGA_V_DIVISOR/2
+  ldx #VGA_V_VISIBLE/VGA_V_DIVISOR/3
+  jsr vram_fill_lines
+  ldx #VGA_V_VISIBLE/VGA_V_DIVISOR/3
   jsr vram_fill_lines
   ; if it's too big, need to split into two chunks
-  ldx #VGA_V_VISIBLE/VGA_V_DIVISOR - (VGA_V_VISIBLE/VGA_V_DIVISOR/2)
+  ldx #VGA_V_VISIBLE/VGA_V_DIVISOR - (VGA_V_VISIBLE/VGA_V_DIVISOR*2/3)
   jsr vram_fill_lines
 
   ; Vertical front porch
@@ -204,16 +213,16 @@ vram_clear_black:
 vram_clear:
 .ZP_Y_HI = $0a
 
+  ldx #8
+  stx ZP_BANK
+  stx PORTB
+
+.planeloop
   ldx #<VRAM_BASE
   stx ZP_PTR
   ldx #>VRAM_BASE
   stx ZP_PTR+1
-  ldx #0
-  stx PORTB
-  
-  and #BITS_PIXELDATA
-  ora #BITS_DEFAULT
-  
+
   ldx #>VRAM_HEIGHT
   inx
   stx .ZP_Y_HI
@@ -237,9 +246,14 @@ vram_clear:
   sta ZP_PTR+1
 
   bcc .nobankchange
+
   lda #>VRAM_BASE
   sta ZP_PTR+1
-  inc PORTB
+
+  inc ZP_BANK
+  lda ZP_BANK
+  sta PORTB
+
 .nobankchange
 
   tya
@@ -249,6 +263,25 @@ vram_clear:
   dec .ZP_Y_HI
   bne .loop
 
+  ; Is it the first (non-control) plane?
+  tax
+  lda ZP_BANK
+  and #8
+  beq .done   ; No - then we're done
+
+  ; Yes - then we need to clear the control plane next
+  lda #16
+  sta ZP_BANK
+  sta PORTB
+
+  ; Restore clear value, and set control bits appropriately
+  txa
+  and #BITS_PIXELDATA
+  ora #BITS_DEFAULT
+
+  jmp .planeloop
+
+.done
   rts
 
 

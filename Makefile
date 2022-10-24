@@ -2,9 +2,10 @@
 BINFILES += bin/vgatest.out
 BINFILES += bin/piday2021.out
 BINFILES += bin/vgademo.out
-BINFILES += bin/vgatest_640x480x3bpp.out
+BINFILES += bin/vgatest_images_3bpp.out
 BINFILES += bin/spritetest.out
 BINFILES += bin/vgatest_text.out
+BINFILES += bin/vgatest_clear.out
 
 all: $(BINFILES)
 
